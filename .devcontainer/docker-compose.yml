@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  realworld:
+    image: mcr.microsoft.com/devcontainers/typescript-node:18
+    volumes:
+      - ../:/workspace:cached
+    command: sleep infinity
+  db: 
+    image: mysql/mysql-server:8.0
+    network_mode: service:realworld
+    environment:
+      MYSQL_USER: prisma
+      MYSQL_DATABASE: 'real_world'
+      MYSQL_PASSWORD: 54321
+      MYSQL_ROOT_PASSWORD: 54321
+      MYSQL_ROOT_HOST: '%'
