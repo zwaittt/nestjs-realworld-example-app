@@ -7,5 +7,6 @@ export interface UserData {
 }
 
 export interface UserRO {
-  user: UserData;
+  user?: UserData;
+  access_token?: string;
 }

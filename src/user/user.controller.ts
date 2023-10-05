@@ -7,6 +7,9 @@ import {
   Param,
   Controller,
   UsePipes,
+  Session,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserRO } from './user.interface';
@@ -15,12 +18,18 @@ import { User } from './user.decorator';
 import { ValidationPipe } from '../shared/pipes/validation.pipe';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { LocalAuthGuard } from 'src/auth/auth.guard';
+import { AuthService } from 'src/auth/auth.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiBearerAuth()
 @ApiTags('users')
 @Controller()
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private atuhService: AuthService,
+  ) {}
 
   @Get('user')
   async findMe(@User('email') email: string): Promise<UserRO> {
@@ -28,8 +37,9 @@ export class UserController {
   }
 
   @Put('user')
+  @UseGuards(JwtAuthGuard)
   async update(
-    @User('id') userId: number,
+    @User('userId') userId: number,
     @Body('user') userData: UpdateUserDto,
   ) {
     return await this.userService.update(userId, userData);
@@ -37,19 +47,22 @@ export class UserController {
 
   @UsePipes(new ValidationPipe())
   @Post('users')
-  async create(@Body('user') userData: CreateUserDto) {
+  async create(@Session() session, @Body('user') userData: CreateUserDto) {
     return this.userService.create(userData);
   }
 
   @Delete('user/:slug')
   async delete(@Param() params) {
-    console.log(params);
     return await this.userService.delete(params.slug);
   }
 
   @UsePipes(new ValidationPipe())
   @Post('users/login')
-  async login(@Body('user') loginUserDto: LoginUserDto): Promise<UserRO> {
-    return await this.userService.login(loginUserDto);
+  @UseGuards(LocalAuthGuard)
+  async login(
+    @Body('user') loginUserDto: LoginUserDto,
+    @Req() req,
+  ): Promise<UserRO> {
+    return this.atuhService.login(req.user);
   }
 }

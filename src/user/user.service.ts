@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
-import jwt from 'jsonwebtoken';
+import { sign } from 'jsonwebtoken';
 import { SECRET } from '../config';
 import { UserRO } from './user.interface';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
@@ -70,9 +70,13 @@ export class UserService {
       email,
       password: hashedPassword,
     };
-    const user = await this.prisma.user.create({ data, select });
-
-    return { user };
+    try {
+      const user = await this.prisma.user.create({ data, select });
+      return { user };
+    } catch (e) {
+      console.log(e.message);
+      throw new HttpException('db insert error', HttpStatus.BAD_REQUEST);
+    }
   }
 
   async update(id: number, data: UpdateUserDto): Promise<any> {
@@ -106,8 +110,7 @@ export class UserService {
     const today = new Date();
     const exp = new Date(today);
     exp.setDate(today.getDate() + 60);
-
-    return jwt.sign(
+    return sign(
       {
         id: user.id,
         username: user.username,
